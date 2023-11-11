@@ -1,0 +1,114 @@
+.section .data
+/* Prompt message */
+prompt:         .asciz "Enter largest integer to display in chart (range of valid values: 1 to 25): "
+
+/* Response messages */
+response1:      .asciz "           Number    Number\n"
+response2:      .asciz "  Number    Squared   Cubed\n"
+response3:      .asciz "------------------------------\n"
+response4:      .asciz "%8u   %8u   %8u\n"
+response5:      .asciz "    Sums   %8u   %8u\n"
+
+/* Format pattern for scanf */
+pattern:        .asciz "%u"
+
+/* Where scanf will store the numbers read */
+value_read:     .word 0
+counter:        .word 0
+sum_squares:    .word 0
+sum_cubes:      .word 0
+
+.section .rodata
+errorm:         .asciz "ERROR - Input must be between 1 and 25...\n"
+newlin:         .asciz "\n"
+header1:        .asciz "           Number    Number\n"
+header2:        .asciz "  Number    Squared   Cubed\n"
+dashes:         .asciz "------------------------------\n"
+output1:        .asciz "%8u   %8u   %8u\n"
+output2:        .asciz "    Sums   %8u   %8u\n"
+
+.section .text
+.global main
+.extern printf, scanf
+
+main:
+    push {lr}                  // Save the return address
+
+input_loop:
+    // Display prompt to enter an integer
+    ldr r0, =prompt            // Load the prompt message
+    bl printf                  // Call printf to display the prompt
+    ldr r0, =pattern           // Load the format pattern for scanf
+    ldr r1, [r4]               // Load the address where the value will be stored
+    ldr r2, =0                 // Clear any previous error flag
+    bl scanf                   // Call scanf to read the input
+
+    // Check if the entered value is within the valid range (1 to 25)
+    ldr r1, [r4]               // Load the value read
+    cmp r1, #1                 // Compare with the lower bound
+    blt input_error            // Branch to input_error if less than 1
+    cmp r1, #25                // Compare with the upper bound
+    bgt input_error            // Branch to input_error if greater than 25
+
+input_valid:
+    // Display headers for the table
+    ldr r0, =newlin            // Load the new line string
+    bl printf                  // Display a new line
+    ldr r0, =response1         // Load the first header
+    bl printf                  // Display the first header
+    ldr r0, =response2         // Load the second header
+    bl printf                  // Display the second header
+    ldr r0, =response3         // Load the dashed line
+    bl printf                  // Display the dashed line
+
+    // Initialize loop counter
+    mov r4, #1                 // Set r4 as the loop counter
+
+display_loop:
+    // Display current values in the table
+    ldr r0, =response4         // Load the format string for displaying numbers
+    ldr r1, [r5]               // Load the current number
+    ldr r2, [r6]               // Load the squared value
+    ldr r3, [r7]               // Load the cubed value
+    bl printf                  // Display the current values
+
+    // Calculate new squared and cubed values
+    ldr r1, [r5]               // Load the current number
+    mul r2, r1, r1             // Calculate the square
+    mul r3, r2, r1             // Calculate the cube
+
+    // Update sums of squares and cubes
+    ldr r8, [r6]               // Load the sum of squares
+    add r8, r8, r2             // Add the square to the sum
+    str r8, [r6]               // Store the updated sum of squares
+
+    ldr r8, [r7]               // Load the sum of cubes
+    add r8, r8, r3             // Add the cube to the sum
+    str r8, [r7]               // Store the updated sum of cubes
+
+    // Increment counter
+    ldr r1, [r5]               // Load the current number
+    add r1, r1, #1             // Increment the counter
+    str r1, [r5]               // Store the updated counter
+
+    // Check loop condition
+    ldr r1, [r5]               // Load the current number
+    ldr r8, =input             // Load the user input
+    ldr r8, [r8]               // Dereference the user input
+    cmp r1, r8                 // Compare with the user input
+    ble display_loop           // Branch to display_loop if less than or equal
+
+    // Display the dashed line
+    ldr r0, =response3         // Load the dashed line
+    bl printf                  // Display the dashed line
+
+    // Display the sums of squares and cubes
+    ldr r0, =response5         // Load the format string for displaying sums
+    ldr r1, [r6]               // Load the sum of squares
+    ldr r2, [r7]               // Load the sum of cubes
+    bl printf                  // Display the sums
+
+    // Exit the program
+    mov r0, #0                 // Set the exit code to 0
+    pop {pc}                   // Return from main
+
