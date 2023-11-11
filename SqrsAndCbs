@@ -1,0 +1,106 @@
+.section .data
+/* Prompt message */
+prompt:         .asciz "Enter largest integer to display in chart (range of valid values: 1 to 25): "
+
+/* Response messages */
+response1:      .asciz "           Number    Number\n"
+response2:      .asciz "  Number    Squared   Cubed\n"
+response3:      .asciz "------------------------------\n"
+response4:      .asciz "%8u   %8u   %8u\n"
+response5:      .asciz "    Sums   %8u   %8u\n"
+
+/* Format pattern for scanf */
+pattern:        .asciz "%u"
+
+/* Where scanf will store the numbers read */
+value_read:     .word 0
+counter:        .word 0
+sum_squares:    .word 0
+sum_cubes:      .word 0
+
+.section .rodata
+errorm:         .asciz "ERROR - Input must be between 1 and 25...\n"
+newlin:         .asciz "\n"
+header1:        .asciz "           Number    Number\n"
+header2:        .asciz "  Number    Squared   Cubed\n"
+dashes:         .asciz "------------------------------\n"
+output1:        .asciz "%8u   %8u   %8u\n"
+output2:        .asciz "    Sums   %8u   %8u\n"
+
+.section .text
+.global main
+.extern printf, scanf
+
+main:
+    push {lr}                // Save our return address
+
+    // Use r4, r5, r6, r7 as registers holding pointers to variables
+    ldr r4, =value_read
+    ldr r5, =counter
+    ldr r6, =sum_squares
+    ldr r7, =sum_cubes
+
+input_loop:
+    ldr r0, =prompt           // Load the prompt message
+    bl printf                 // Display the prompt message
+    ldr r0, =pattern          // Load the format pattern for scanf
+    ldr r1, [r4]              // Load the address of value_read
+    ldr r2, =0                // Clear any previous value
+    bl scanf                  // Read user input
+
+    ldr r1, [r4]              // Load the user input value
+    cmp r1, #1                // Compare if the input is less than 1
+    blt input_error           // Branch if less than 1
+    cmp r1, #25               // Compare if the input is greater than 25
+    bgt input_error           // Branch if greater than 25
+
+    b input_valid             // Branch to input_valid if input is valid
+
+input_error:
+    ldr r0, =errorm            // Load the error message
+    bl printf                  // Display the error message
+    b input_loop               // Branch back to input_loop to retry
+
+input_valid:
+    ldr r0, =newlin            // Load the newline character
+    bl printf                  // Display a new line
+    ldr r0, =header1           // Load the first part of the table header
+    bl printf                  // Display the first part of the table header
+    ldr r0, =header2           // Load the second part of the table header
+    bl printf                  // Display the second part of the table header
+    ldr r0, =dashes            // Load the dashed line
+    bl printf                  // Display the dashed line
+
+    mov r4, #1                 // Initialize loop counter to 1
+
+display_loop:
+    ldr r0, =output1           // Load the format string for displaying numbers
+    ldr r1, [r5]               // Load the loop counter
+    ldr r2, [r6]               // Load the sum of squares
+    ldr r3, [r7]               // Load the sum of cubes
+    bl printf                  // Display the current values
+
+    ldr r1, [r5]               // Load the loop counter
+    mul r2, r1, r1             // Calculate the square of the loop counter
+    mul r3, r2, r1             // Calculate the cube of the loop counter
+
+    ldr r8, [r6]               // Load the current sum of squares
+    add r8, r8, r2             // Add the square of the loop counter to the sum
+    str r8, [r6]               // Store the updated sum of squares
+
+    ldr r8, [r7]               // Load the current sum of cubes
+    add r8, r8, r3             // Add the cube of the loop counter to the sum
+    str r8, [r7]               // Store the updated sum of cubes
+
+    ldr r1, [r5]               // Load the loop counter
+    add r1, r1, #1             // Increment the loop counter
+    str r1, [r5]               // Store the updated loop counter
+
+    ldr r1, [r5]               // Load the loop counter
+    ldr r8, =value_read        // Load the user input value
+    ldr r8, [r8]               // Dereference the pointer to get the user input value
+    cmp r1, r8                 // Compare the loop counter with the user input value
+    ble display_loop           // Branch back to display_loop if loop counter is less than or equal to the user input value
+
+    ldr r0, =dashes            // Load the dashed line
+    bl printf                  // Display
